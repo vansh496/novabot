@@ -42,5 +42,14 @@
       "leave_channel_id": 1554505012762251408,
       "leave_message": "{username} left **{server}**. Member count: {member_count}"
     }
+  },
+  "1545770371129811044": {
+    "verification": {
+      "enabled": true,
+      "channel_id": 1546388016711598140,
+      "role_id": 1546385085249363999,
+      "message": "Click the button below to verify yourself and get access to the server.",
+      "embed_color": "#5865F2"
+    }
   }
 }
