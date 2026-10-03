@@ -29,6 +29,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 load_dotenv(os.path.join(ROOT, ".env"))
 
+import emoji_codes  # noqa: E402  (root module)
 import settings as settings_store  # noqa: E402  (root module)
 
 API = "https://discord.com/api/v10"
@@ -380,6 +381,30 @@ def _emoji_list(raw):
     return out
 
 
+_EMOJI_CACHE: dict = {}  # guild_id -> (timestamp, rows)
+
+
+def _guild_emojis(guild_id: str) -> list:
+    """Guild ke emojis (1 minute cache) - shortcode resolve karne ke liye."""
+    now = time.time()
+    hit = _EMOJI_CACHE.get(str(guild_id))
+    if hit and now - hit[0] < 60:
+        return hit[1]
+    raw = _api_get(f"/guilds/{guild_id}/emojis", _bot_headers(), default=[]) or []
+    rows = _emoji_list(raw)
+    _EMOJI_CACHE[str(guild_id)] = (now, rows)
+    return rows
+
+
+def _emojitext(text, guild_id: str) -> str:
+    """`:fire:` -> `<:fire:ID>` (bhejne se pehle).
+
+    Server-side isliye, taaki pehle se save kiya hua shortcode wala text bhi
+    bina edit kiye theek chale - sirf JS par nirbhar nahi rehna chahiye.
+    """
+    return emoji_codes.resolve(text, _guild_emojis(guild_id))
+
+
 @app.route("/servers/<guild_id>")
 def server(guild_id):
     if not session.get("token"):
@@ -445,6 +470,8 @@ def api_save(guild_id, section):
     payload = request.get_json(silent=True) or {}
     if not isinstance(payload, dict):
         return _err("Galat data.")
+    # Save karte hi `:fire:` wale shortcodes ko asli emoji syntax bana do
+    payload = emoji_codes.resolve_in(payload, _guild_emojis(guild_id))
     try:
         updated = settings_store.set_section(guild_id, section, payload)
     except KeyError:
@@ -530,14 +557,14 @@ def api_welcome_test(guild_id):
         channel_id = str(cfg.get("leave_channel_id") or "0")
         if channel_id == "0":
             return _err("Leave channel select karke Save karein.")
-        text = _fmt_vars(cfg.get("leave_message"), guild_id) or f"{name} left."
+        text = _emojitext(_fmt_vars(cfg.get("leave_message"), guild_id), guild_id) or f"{name} left."
         _, err = _post_message(channel_id, {"content": text})
         return _err(err) if err else jsonify({"ok": True, "channel": channel_id})
 
     channel_id = str(cfg.get("channel_id") or "0")
     if channel_id == "0":
         return _err("Welcome channel select karke Save karein.")
-    text = _fmt_vars(cfg.get("message"), guild_id)
+    text = _emojitext(_fmt_vars(cfg.get("message"), guild_id), guild_id)
 
     if cfg.get("use_embed", True):
         info = _member_count_and_name(guild_id)
@@ -575,7 +602,7 @@ def api_verification_panel(guild_id):
 
     embed = {
         "title": "🛡️ Verification",
-        "description": cfg.get("message") or "Click the button below to verify.",
+        "description": _emojitext(cfg.get("message"), guild_id) or "Click the button below to verify.",
         "color": _color_int(cfg.get("embed_color")),
         "footer": {"text": "Neeche diya gaya button dabayein"},
     }
@@ -612,7 +639,7 @@ def api_tickets_panel(guild_id):
 
     embed = {
         "title": "🎫 Support Tickets",
-        "description": cfg.get("message") or "Need help? Open a ticket below.",
+        "description": _emojitext(cfg.get("message"), guild_id) or "Need help? Open a ticket below.",
         "color": _color_int(cfg.get("embed_color")),
         "footer": {"text": "Ek waqt mein ek hi ticket khuli ho sakti hai"},
     }
@@ -648,6 +675,16 @@ def api_embed_send(guild_id):
     channels = _api_get(f"/guilds/{guild_id}/channels", _bot_headers(), default=[]) or []
     if channel_id not in {str(c.get("id")) for c in channels}:
         return _err("Ye channel is server mein nahi mila.")
+
+    # JS resolve karke bhejta hai, phir bhi yahan dobara - koi purana tab /
+    # cache wala page shortcode bhej de to Discord text na dikhaye.
+    if isinstance(embed.get("title"), str):
+        embed["title"] = _emojitext(embed["title"], guild_id)
+    if isinstance(embed.get("description"), str):
+        embed["description"] = _emojitext(embed["description"], guild_id)
+    footer = embed.get("footer")
+    if isinstance(footer, dict) and isinstance(footer.get("text"), str):
+        footer["text"] = _emojitext(footer["text"], guild_id)
 
     try:
         resp = requests.post(

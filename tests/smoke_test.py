@@ -188,11 +188,25 @@ def test_bot_cogs() -> None:
             name = "u"
             display_name = "U"
             id = 1
+        class _E:
+            def __init__(self, name, id, animated=False):
+                self.name = name
+                self.id = id
+                self.animated = animated
+
         class _G:
             name = "Server"
             member_count = 10
+            emojis = [_E(name="fire", id=1555913518652334240, animated=True)]
+
         text = _format("Hi {user} to {server} #{member_count}", _M(), _G())
         check("welcome variables replace", text == "Hi <@1> to Server #10", text)
+        text = _format("Naya update :fire: 5:30 baje", _M(), _G())
+        check(
+            "welcome shortcodes resolve hote hain",
+            text == "Naya update <a:fire:1555913518652334240> 5:30 baje",
+            text,
+        )
 
         from cogs.antinuke import CATEGORY_BY_ACTION
         from discord import AuditLogAction

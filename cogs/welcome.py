@@ -6,13 +6,14 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+import emoji_codes
 import settings
 
 
 def _format(template: str, member: discord.Member, guild: discord.Guild) -> str:
     if not template:
         return ""
-    return (
+    text = (
         str(template)
         .replace("{user}", member.mention)
         .replace("{username}", member.name)
@@ -21,6 +22,8 @@ def _format(template: str, member: discord.Member, guild: discord.Guild) -> str:
         .replace("{member_count}", str(guild.member_count))
         .replace("{id}", str(member.id))
     )
+    # `:fire:` jaise shortcodes -> asli emoji, warna Discord text hi dikhayega
+    return emoji_codes.resolve(text, getattr(guild, "emojis", None))
 
 
 def _color(raw, default: discord.Color | None = None) -> discord.Color:

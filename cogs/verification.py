@@ -6,6 +6,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+import emoji_codes
 import settings
 
 
@@ -112,7 +113,8 @@ class Verify(commands.Cog):
 
         embed = discord.Embed(
             title="🛡️ Verification",
-            description=cfg.get("message") or "Click the button below to verify.",
+            description=emoji_codes.resolve(cfg.get("message"), interaction.guild.emojis)
+            or "Click the button below to verify.",
             color=color,
         )
         embed.set_footer(text="Neeche diya gaya button dabayein")

@@ -9,6 +9,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+import emoji_codes
 import settings
 
 INVALID_CHARS = re.compile(r"[^a-z0-9_\-]+")
@@ -129,7 +130,8 @@ class TicketOpenView(discord.ui.View):
 
         embed = discord.Embed(
             title="🎫 Ticket Opened",
-            description=cfg.get("message") or "Support team jaldi is ticket mein jawab dega.",
+            description=emoji_codes.resolve(cfg.get("message"), interaction.guild.emojis)
+            or "Support team jaldi is ticket mein jawab dega.",
             color=_color(cfg.get("embed_color")),
         )
         embed.add_field(name="Opened by", value=interaction.user.mention, inline=True)
@@ -388,7 +390,8 @@ class Tickets(commands.Cog):
 
         embed = discord.Embed(
             title="🎫 Support Tickets",
-            description=cfg.get("message") or "Need help? Open a ticket below.",
+            description=emoji_codes.resolve(cfg.get("message"), interaction.guild.emojis)
+            or "Need help? Open a ticket below.",
             color=_color(cfg.get("embed_color")),
         )
         embed.set_footer(text="Ek waqt mein ek hi ticket khuli ho sakti hai")
