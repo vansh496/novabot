@@ -109,25 +109,33 @@ http://localhost:5000
 
 ---
 
-## 🚀 Render par host karein (24x7 online, computer band ho to bhi chalta rahe)
+## 🚀 Railway par host karein (24x7 online, computer band ho to bhi chalta rahe)
 
-Repo **public** GitHub par hone ke baad Render se free mein host ho jata hai.
-`render.yaml` blueprint aur `start.py` (bot + dashboard ek hi service mein chalane wala
-launcher) project ke saath maujood hain.
+> **Render kaam nahi karta:** Render ke outbound IP range (74.220.x / Choopa) par
+> Discord `/api/*` **429** aata hai — bot login hi nahi ho pata (HTML page 200 aata
+> hai, isliye galti se lagta hai sab theek hai). **Railway** ke IP se gateway
+> **200** aata hai, isliye yahan host kiya ja raha hai.
+> Live: `https://novabot-production-31b1.up.railway.app`
 
-### 1. Render mein service banayein
+`start.py` (bot + dashboard ek hi service mein chalane wala launcher) aur `Procfile`
+(`web: python start.py`) project ke saath maujood hain. Railway khud Procfile dekh kar
+start command leta hai.
 
-1. [render.com](https://dashboard.render.com/) → login → **New +** → **Web Service**
-2. **Connect a repository** → apna GitHub repo chunein
-3. Settings:
-   | Field | Value |
-   |-------|-------|
-   | Name | `novabot` (ya jo bhi pasand ho) |
-   | Runtime | `Python 3` |
-   | Build Command | `pip install -r requirements.txt` |
-   | Start Command | `python start.py` |
-   | Instance Type | **Free** |
-4. **Environment** section mein ye vars bharein (sab `.env.example` wale hain):
+### 1. Railway CLI se deploy
+
+GitHub App install karne par GitHub **password (sudo mode)** maangta hai — bina uske
+bhi CLI se deploy ho jata hai:
+
+1. [railwayapp/cli releases](https://github.com/railwayapp/cli/releases) se
+   `railway-windows-x86_64.zip` download karein → `railway.exe` nikalein
+2. `railway login` → browser mein Railway account se authorize
+3. Project folder mein: `railway init --name novabot`
+4. Env vars set karein — **value command line mein mat likhein**, stdin se dein:
+   ```
+   railway variable set DISCORD_TOKEN --stdin --skip-deploys
+   ```
+   `.env` ke saare 7 keys set karein (`DISCORD_TOKEN`, `BOT_OWNER_ID`, `CLIENT_ID`,
+   `CLIENT_SECRET`, `SECRET_KEY`, `REDIRECT_URI`, `DASHBOARD_URL`).
 
    | Key | Value |
    |-----|-------|
@@ -135,39 +143,39 @@ launcher) project ke saath maujood hain.
    | `BOT_OWNER_ID` | Aapki Discord User ID |
    | `CLIENT_ID` | OAuth2 → Client ID |
    | `CLIENT_SECRET` | OAuth2 → Client Secret |
-   | `REDIRECT_URI` | `https://<service>.onrender.com/callback` |
-   | `DASHBOARD_URL` | `https://<service>.onrender.com` |
-   | `SECRET_KEY` | `render.yaml` khud random bana leta hai (ya koi lambi string) |
+   | `REDIRECT_URI` | `https://<railway-url>/callback` |
+   | `DASHBOARD_URL` | `https://<railway-url>` |
+   | `SECRET_KEY` | koi lambi random string (session ke liye) |
 
-5. **Create Web Service** → build hone dein (2-4 minute) → log mein
-   `Logged in as APEX#7583` dikhe matlab bot live hai.
+5. `railway domain` → public domain banao → `railway up --detach` se deploy
+6. `railway logs` mein `Logged in as APEX#7583` dikhe matlab **bot live** hai.
 
-> **Git tracking:** settings badalne par Render deploy ko manually **Manual Deploy →
-> Clear build cache & deploy** karein, warna next deploy par `data/settings.json`
-> repo wali version par aa jayega.
+> **Auto-deploy off hai:** code badalne par khud `railway up` chalana padega
+> (GitHub App connect karke git-push auto-deploy bhi ho sakta hai).
 
-### 2. Discord Developer Portal mein redirect URL add karein
+### 2. Discord Developer Portal mein redirect URL
 
-OAuth2 → **Redirects** → add karein aur **Save** dabayein:
+OAuth2 → **Redirects** → naya Railway URL daalein → **Save Changes** dabayein:
 
 ```
-https://<service>.onrender.com/callback
+https://<railway-url>/callback
 ```
 
 > Portal mein **Server Members Intent ON** rehna chahiye (Step 1 dekhein).
 
 ### 3. Zaroori baatein
 
-- **Ek hi jagah chalayein:** Render ka bot + aapke computer ka bot **ek saath**
+- **Ek hi jagah chalayein:** Railway ka bot + aapke computer ka bot **ek saath**
   mat chalayein — dono same events dekh kar **double welcome / double alert**
-  karenge. Local chalana ho to Render service ko **Stop** kar dein.
-- **Render Free plan:** disk ephemeral hai — naye deploy par `data/settings.json`
-  repo wala version wapas aa jata hai. Zarurat pade to **paid plan + persistent disk**
-  le lein.
-- Health check `/` par hota hai (dashboard) — dashboard down hote hi Render service
-  ko khud restart kar deta hai.
+  karenge. Local chalana ho to Railway service ko stop kar dein.
+- **Railway ka disk ephemeral hai** — naye deploy par `data/settings.json` repo wala
+  version wapas aa jata hai (dashboard ki changes mit jayengi). Permanent chahiye to
+  **Railway volume** lagana padega.
+- **Usage based billing:** trial ka **$5 credit / 30 din** free hai (card nahi
+  chahiye). Credit khatam hone par Hobby plan (card) lena padega.
 - Dashboard **development server** (`app.run`) chalata hai — chhoti team ke liye
   theek hai; bada traffic ho to gunicorn lagana behtar hai.
+- Restart policy `ON_FAILURE` hai — crash par khud 10 baar tak restart leta hai.
 
 ---
 
