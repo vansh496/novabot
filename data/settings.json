@@ -51,26 +51,5 @@
       "message": "Click the button below to verify yourself and get access to the server.",
       "embed_color": "#5865F2"
     }
-  },
-  "TEST_GUILD_1": {
-    "welcome": {
-      "enabled": true,
-      "channel_id": 123456,
-      "message": "Hi {user}",
-      "use_embed": false,
-      "embed_color": "#57F287",
-      "dm_enabled": false,
-      "dm_message": "Welcome to **{server}**, {username}! Please read the rules and enjoy your stay.",
-      "leave_enabled": false,
-      "leave_channel_id": 0,
-      "leave_message": "{username} left **{server}**. Member count: {member_count}"
-    },
-    "verification": {
-      "enabled": true,
-      "channel_id": 0,
-      "role_id": 0,
-      "message": "Click the button below to verify yourself and get access to the server.",
-      "embed_color": "#5865F2"
-    }
   }
 }

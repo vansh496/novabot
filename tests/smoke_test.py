@@ -63,6 +63,10 @@ def test_settings() -> None:
         if changed:
             with open(settings.SETTINGS_FILE, "w", encoding="utf-8") as fh:
                 json.dump(data, fh, indent=2)
+            # Backup bhi SAAF version ka lo - warna test ke end mein restore
+            # karne par pichhle run ka junk wapas file me chala jayega.
+            with open(settings.SETTINGS_FILE, "r", encoding="utf-8") as fh:
+                _SETTINGS_BACKUP = fh.read()
     check("settings file banti hai", os.path.exists(settings.SETTINGS_FILE))
 
     cfg = settings.get("TEST_GUILD_1")
