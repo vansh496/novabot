@@ -4,9 +4,10 @@ Do tareeke se kaam karta hai:
 
   A) INSTANT (1 second ke andar) - `on_audit_log_entry_create` gateway event:
      kisi ne bhi bot ADD kiya, member ko BAN/KICK kiya, CHANNEL ya ROLE
-     banaya/deleted, ya kisi ko **Administrator wali role** de di / role edit
-     karke admin bana liya → attacker ko foran ban. Ismein ADMIN bhi nahi
-     bachta (sirf server owner, bot owner, whitelist aur khud bot safe hain).
+     banaya/deleted, kisi ko **Administrator wali role** de di / role edit
+     karke admin bana liya, ya kisi **member ke role HATA diye** → attacker
+     ko foran ban. Ismein ADMIN bhi nahi bachta (sirf server owner, bot
+     owner, whitelist aur khud bot safe hain).
 
   B) Threshold (fallback) - har 2 second mein audit log poll: ek window ke
      andar limit se zyada bans/kicks/channels/roles → alert + config action.
@@ -52,6 +53,8 @@ INSTANT_ACTIONS = {
 
 # In actions par tabhi ban, jab Administrator GRANT ki ja rahi ho.
 # (Warna rozmarra ki normal role-editing par bhi ban lag jata.)
+# Alag se: member_role_update par role HATE gaye ho to bhi instant ban hai
+# (neeche `_special_label` dekhein).
 ADMIN_ROLE_ACTIONS = {
     AuditLogAction.member_role_update: "admin role grant",
     AuditLogAction.role_update: "role edit (administrator)",
@@ -190,19 +193,65 @@ class AntiNuke(commands.Cog):
                 return True
         return False
 
+    def _special_label(self, guild: discord.Guild, entry: discord.AuditLogEntry) -> str | None:
+        """`ADMIN_ROLE_ACTIONS` wali entries ke liye instant-ban ka label.
+
+        Do hi maamle ban-worthy hain:
+          1) Administrator GRANT hui (purana logic)
+          2) Kisi **member ke role HATE diye** (nayi demand) - chahe ek hi role
+             ho, usko bhi nuker maana jayega.
+        Warna None -> rozmarra ki normal role-editing, koi action nahi.
+        """
+        if entry.action not in ADMIN_ROLE_ACTIONS:
+            return None
+        if self._admin_role_granted(guild, entry):
+            return ADMIN_ROLE_ACTIONS[entry.action]
+
+        if entry.action == AuditLogAction.member_role_update:
+            removed = self._removed_roles(entry)
+            if removed:
+                names = ", ".join(f"`{getattr(role, 'name', '?')}`" for role in removed[:4])
+                extra = "" if len(removed) <= 4 else f" +{len(removed) - 4} aur"
+                return f"member ke role hate ({names}{extra})"
+            hint = "role add hue ya pata nahi chala"
+        else:
+            hint = "admin nahi diya"
+        _log.info(
+            "Anti-Nuke INSTANT: %s (%s) by %s -> %s, chhoda",
+            ADMIN_ROLE_ACTIONS.get(entry.action),
+            entry.action.name,
+            entry.user_id,
+            hint,
+        )
+        return None
+
+    @staticmethod
+    def _removed_roles(entry: discord.AuditLogEntry) -> list:
+        """member_role_update mein kaun se role HATE gaye?
+
+        Khaali list = ya to kuch hataya hi nahi, ya pata nahi chala (cache miss)
+        - dono maamle mein hum andaza nahi lagate, warna galat banda ban ho jayega.
+        """
+        before = getattr(entry, "before", None)
+        after = getattr(entry, "after", None)
+        old = getattr(before, "roles", None)
+        new = getattr(after, "roles", None)
+        if old is None or new is None:
+            changes = getattr(entry, "changes", None) or {}
+            change = changes.get("roles")
+            if change is not None:
+                old, new = change.old, change.new
+        if old is None or new is None:
+            return []
+        kept = {int(getattr(role, "id", 0) or 0) for role in new}
+        return [role for role in old if int(getattr(role, "id", 0) or 0) not in kept]
+
     async def _instant(self, guild: discord.Guild, cfg: dict, entry: discord.AuditLogEntry) -> None:
         label = INSTANT_ACTIONS.get(entry.action)
         if label is None:
-            label = ADMIN_ROLE_ACTIONS.get(entry.action)
+            label = self._special_label(guild, entry)
             if label is None:
-                return
-            if not self._admin_role_granted(guild, entry):
-                # Normal role change (admin diye bina) - koi action nahi
-                _log.info(
-                    "Anti-Nuke INSTANT: %s (%s) by %s -> admin nahi diya, chhoda",
-                    label, entry.action.name, entry.user_id,
-                )
-                return
+                return  # normal role-editing - koi action nahi
 
         user = entry.user
         if user is None:
@@ -465,7 +514,8 @@ class AntiNuke(commands.Cog):
             name="Instant actions",
             value=", ".join(
                 f"`{v}`" for v in sorted(set(INSTANT_ACTIONS.values()) | set(ADMIN_ROLE_ACTIONS.values()))
-            ),
+            )
+            + ", `member ke role hatana`",
             inline=False,
         )
         embed.add_field(

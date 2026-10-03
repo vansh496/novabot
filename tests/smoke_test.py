@@ -224,8 +224,38 @@ def test_bot_cogs() -> None:
             text,
         )
 
-        from cogs.antinuke import CATEGORY_BY_ACTION
+        # --- Anti-Nuke: member ke role hate to instant ban ---
+        from types import SimpleNamespace as _NS
+
+        from cogs.antinuke import AntiNuke
         from discord import AuditLogAction
+
+        def _role(rid, name, admin=False):
+            return _NS(id=rid, name=name, permissions=_NS(administrator=admin))
+
+        def _entry(before_roles, after_roles, after_perms=None):
+            return _NS(
+                action=AuditLogAction.member_role_update,
+                before=_NS(roles=before_roles, permissions=None),
+                after=_NS(roles=after_roles, permissions=after_perms or _NS(administrator=False)),
+                changes={},
+                user_id=123,
+            )
+
+        cog = AntiNuke.__new__(AntiNuke)  # __init__ nahi - tasks loop na chalu ho
+        lbl = cog._special_label(None, _entry([_role(1, "Member"), _role(2, "VIP")], [_role(1, "Member")]))
+        check("member ke role hate -> instant ban label", lbl is not None and "VIP" in str(lbl), lbl)
+
+        lbl = cog._special_label(None, _entry([_role(1, "Member")], [_role(1, "Member"), _role(2, "VIP")]))
+        check("sirf role add hue -> koi action nahi", lbl is None, lbl)
+
+        lbl = cog._special_label(None, _entry([], [_role(5, "Mods", admin=True)], _NS(administrator=True)))
+        check("admin grant -> purana label chalta hai", lbl == "admin role grant", lbl)
+
+        lbl = cog._special_label(None, _entry([_role(1, "Member")], [_role(1, "Member")]))
+        check("kuch badla hi nahi -> koi action nahi", lbl is None, lbl)
+
+        from cogs.antinuke import CATEGORY_BY_ACTION
 
         check(
             "anti-nuke action map",
