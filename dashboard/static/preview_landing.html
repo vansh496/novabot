@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Preview - NovaBot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#"><span class="brand-mark">◆</span> NovaBot</a>
+    <nav class="topnav">
+      <a href="#">Home</a>
+      <a class="btn btn-discord" href="#">Login with Discord</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-badge">Python &middot; discord.py &middot; Flask &middot; HTML/CSS</div>
+      <h1>Apne Discord server ko<br /><span class="grad">ek hi dashboard</span> se control karein</h1>
+      <p class="lead">
+        Tickets, Anti-Nuke protection, Welcome &amp; Join DM, Verification aur Embed builder &mdash;
+        sab kuch automatic, sab kuch aapke control mein.
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-discord btn-lg" href="#">Login with Discord</a>
+        <a class="btn btn-ghost btn-lg" href="#features">Features dekhein</a>
+      </div>
+
+      <div class="hero-cards">
+        <div class="float-card"><span class="fc-emoji">🎫</span><b>Tickets</b><small>Private support channels</small></div>
+        <div class="float-card"><span class="fc-emoji">💣</span><b>Anti-Nuke</b><small>Instant raid protection</small></div>
+        <div class="float-card"><span class="fc-emoji">👋</span><b>Welcome + DM</b><small>Har member par welcome</small></div>
+        <div class="float-card"><span class="fc-emoji">🛡️</span><b>Verification</b><small>Button se role verify</small></div>
+      </div>
+    </section>
+
+    <section id="features" class="section">
+      <h2 class="section-title">Ek bot, saare features</h2>
+      <div class="feature-grid">
+        <div class="feature"><span class="feature-emoji">🎫</span><h3>Ticket System</h3><p>Panel button se private ticket channel banta hai, close/reopen/delete aur transcript log ke saath.</p></div>
+        <div class="feature"><span class="feature-emoji">💣</span><h3>Anti-Nuke System</h3><p>Audit log monitor karta hai. Zyada bans/kicks/channel deletes par alert + attacker ko kick/ban.</p></div>
+        <div class="feature"><span class="feature-emoji">👋</span><h3>Welcome &amp; Leave</h3><p>Embed welcome message, leave message, aur naye member ko seedha DM &mdash; teenon alag se ON.</p></div>
+        <div class="feature"><span class="feature-emoji">🛡️</span><h3>Verification</h3><p>Ek button, ek click &mdash; member ko verify role mil jata hai aur pura server nazar aa jata hai.</p></div>
+        <div class="feature"><span class="feature-emoji">📨</span><h3>Embed Builder</h3><p>Dashboard par live preview ke saath embed banayein, ya Discord se <code>/embed</code> command chalayein.</p></div>
+        <div class="feature"><span class="feature-emoji">🌐</span><h3>Dashboard Control</h3><p>Discord se login, server select karein, settings save karein &mdash; bot ko restart ki zaroorat hi nahi.</p></div>
+      </div>
+    </section>
+
+    <section class="section section-alt">
+      <h2 class="section-title">Chalana kitna aasan hai</h2>
+      <div class="steps">
+        <div class="step"><span class="step-num">1</span><b>Bot banayein</b><p>Discord Developer Portal se token lein</p></div>
+        <div class="step"><span class="step-num">2</span><b>.env setup</b><p>Token, Client ID, Client Secret daalein</p></div>
+        <div class="step"><span class="step-num">3</span><b>Chalayein</b><p><code>python bot.py</code> + <code>python dashboard/app.py</code></p></div>
+        <div class="step"><span class="step-num">4</span><b>Login &amp; Configure</b><p>Dashboard se saari settings sambhalein</p></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>◆ NovaBot &mdash; Discord Bot + Dashboard</span>
+    <span>Python (discord.py) &middot; Flask &middot; HTML/CSS</span>
+  </footer>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script src="js/script.js"></script>
+</body>
+</html>

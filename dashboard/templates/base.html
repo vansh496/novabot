@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}NovaBot Dashboard{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('index') }}">
+      <span class="brand-mark">◆</span> NovaBot
+    </a>
+    <nav class="topnav">
+      <a href="{{ url_for('index') }}">Home</a>
+      {% if discord_user %}
+      <a href="{{ url_for('servers') }}">Dashboard</a>
+      {% endif %}
+      {% if discord_user %}
+      <span class="user-chip">
+        <img class="avatar" src="{{ discord_user.avatar }}" alt="" />
+        {{ discord_user.username }}
+      </span>
+      <a class="btn btn-ghost" href="{{ url_for('logout') }}">Logout</a>
+      {% else %}
+      <a class="btn btn-discord" href="{{ url_for('login') }}">Login with Discord</a>
+      {% endif %}
+    </nav>
+  </header>
+
+  <main class="{% block main_class %}{% endblock %}">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    <span>◆ NovaBot &mdash; Discord Bot + Dashboard</span>
+    <span>Python (discord.py) &middot; Flask &middot; HTML/CSS</span>
+  </footer>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

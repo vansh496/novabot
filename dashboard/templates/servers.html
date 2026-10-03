@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Servers - NovaBot{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Select a Server</h1>
+      <p class="muted">Sirf woh servers dikhte hain jahan aapki <b>Manage Server</b> permission ho.</p>
+    </div>
+    <a class="btn btn-ghost" href="{{ url_for('index') }}">&larr; Home</a>
+  </div>
+
+  <div class="server-grid">
+    {% for g in guilds %}
+    <div class="server-card {{ '' if g.bot_in else 'server-card-warn' }}">
+      <img class="server-icon" src="{{ g.icon }}" alt="" />
+      <div class="server-body">
+        <h3 title="{{ g.name }}">{{ g.name }}</h3>
+        {% if g.bot_in %}
+        <span class="badge badge-green">● Bot installed</span>
+        <a class="btn btn-primary" href="/servers/{{ g.id }}">Manage &rarr;</a>
+        {% else %}
+        <span class="badge badge-yellow">● Bot nahi hai</span>
+        <a class="btn btn-discord" href="{{ invite }}&amp;guild_id={{ g.id }}">Invite Bot</a>
+        {% endif %}
+      </div>
+    </div>
+    {% else %}
+    <div class="empty">
+      <p>Koi server nahi mila ya aap kisi server ke admin nahi hain.</p>
+      <a class="btn btn-discord" href="{{ invite }}">Bot ko invite karein</a>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

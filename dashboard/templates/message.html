@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} - NovaBot{% endblock %}
+{% block content %}
+<div class="page center-page">
+  <div class="card narrow">
+    <h1>{{ title }}</h1>
+    <p class="muted">{{ text }}</p>
+    <a class="btn btn-primary" href="{{ url_for('index') }}">Home par wapas</a>
+  </div>
+</div>
+{% endblock %}

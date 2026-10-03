@@ -1,0 +1,468 @@
+{% extends "base.html" %}
+{% block title %}{{ guild.name }} - NovaBot{% endblock %}
+{% block content %}
+<div class="dash">
+  <!-- ================= SIDEBAR ================= -->
+  <aside class="dash-side">
+    <div class="side-guild">
+      <img class="server-icon sm" src="{{ guild.icon }}" alt="" />
+      <div class="side-guild-text">
+        <strong>{{ guild.name }}</strong>
+        <span class="muted">Server Dashboard</span>
+      </div>
+    </div>
+
+    <nav class="side-nav">
+      <button type="button" class="side-link active" data-tab="overview">🏠 Overview</button>
+      <button type="button" class="side-link" data-tab="welcome">👋 Welcome &amp; DM</button>
+      <button type="button" class="side-link" data-tab="verification">🛡️ Verification</button>
+      <button type="button" class="side-link" data-tab="tickets">🎫 Tickets</button>
+      <button type="button" class="side-link" data-tab="antinuke">💣 Anti-Nuke</button>
+      <button type="button" class="side-link" data-tab="embeds">📨 Embed Builder</button>
+    </nav>
+
+    <div class="side-foot">
+      <button type="button" class="btn btn-primary btn-block" id="save-all">💾 Save All</button>
+      <a class="btn btn-ghost btn-block" href="{{ url_for('servers') }}">&larr; All Servers</a>
+    </div>
+  </aside>
+
+  <!-- ================= MAIN ================= -->
+  <main class="dash-main">
+    {% if not bot_in %}
+    <div class="alert alert-error">
+      <b>Bot is server mein maujood nahi hai.</b> Pehle invite karein, phir settings kaam karengi.
+      <a class="btn btn-discord" href="{{ invite }}">Invite Bot</a>
+    </div>
+    {% endif %}
+
+    <!-- ---------- OVERVIEW ---------- -->
+    <section class="tab" id="tab-overview">
+      <div class="page-head"><h1>Overview</h1></div>
+
+      <div class="card-grid three">
+        <div class="card stat">
+          <span class="stat-emoji">🧩</span>
+          <span class="stat-num"><span data-stat="modules">0</span>/4</span>
+          <span class="muted">Modules ON</span>
+        </div>
+        <div class="card stat">
+          <img class="avatar lg" src="https://cdn.discordapp.com/avatars/{{ bot_user.id }}/{{ bot_user.avatar }}.png?size=64"
+               onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'" alt="" />
+          <span class="stat-num" style="font-size:1rem">{{ bot_user.username or 'Bot' }}</span>
+          <span class="muted">{{ 'Bot connected' if bot_in else 'Bot not installed' }}</span>
+        </div>
+        <div class="card stat">
+          <span class="stat-emoji">🌐</span>
+          <span class="stat-num" style="font-size:1rem">Live sync</span>
+          <span class="muted">Save = foran apply (restart nahi)</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Modules ki current status</h3>
+        <ul class="module-list">
+          <li>👋 Welcome / Leave / Join DM <span class="badge" data-module="welcome">—</span></li>
+          <li>🛡️ Verification <span class="badge" data-module="verification">—</span></li>
+          <li>🎫 Tickets <span class="badge" data-module="tickets">—</span></li>
+          <li>💣 Anti-Nuke <span class="badge" data-module="antinuke">—</span></li>
+        </ul>
+        <p class="muted">
+          Har section mein <b>Save</b> dabayein. Settings file par save hoti hain aur bot unhe turant utha leta hai.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3>Discord commands</h3>
+        <div class="cmd-grid">
+          <code>/ticket setup</code><span>Tickets set karein</span>
+          <code>/ticket panel</code><span>Panel bhejein</span>
+          <code>/welcome setup</code><span>Welcome channel set</span>
+          <code>/welcome test</code><span>Test welcome</span>
+          <code>/welcome dm-test</code><span>Test join DM</span>
+          <code>/verify setup</code><span>Verify channel + role</span>
+          <code>/verify panel</code><span>Verify panel bhejein</span>
+          <code>/embed</code><span>Modal se embed banayein</span>
+          <code>/antinuke_status</code><span>Anti-nuke status</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- WELCOME ---------- -->
+    <section class="tab hidden" id="tab-welcome">
+      <div class="page-head"><h1>Welcome, Leave &amp; Join DM</h1></div>
+
+      <div class="embed-layout">
+      <form class="card" data-section="welcome">
+        <div class="row">
+          <div class="row-text"><b>Welcome message</b><span class="muted">Naye member ka welcome channel par</span></div>
+          <label class="switch"><input type="checkbox" name="enabled" /><span class="slider"></span></label>
+        </div>
+        <div class="field">
+          <label>Welcome channel</label>
+          <select name="channel_id" data-populate="channels"></select>
+        </div>
+        <div class="field">
+          <label>Message</label>
+          <textarea name="message" rows="3" data-emoji></textarea>
+          <span class="hint">Variables: <code>{user}</code> <code>{username}</code> <code>{display_name}</code> <code>{server}</code> <code>{member_count}</code></span>
+        </div>
+        <div class="row">
+          <div class="row-text"><b>Embed style</b><span class="muted">OFF = plain text message</span></div>
+          <label class="switch"><input type="checkbox" name="use_embed" /><span class="slider"></span></label>
+        </div>
+        <div class="field">
+          <label>Embed color <span class="muted">(bich wali line ka rang)</span></label>
+          <div class="color-row">
+            <input type="color" class="color-swatch" data-swatch="embed_color" value="#57f287" />
+            <input name="embed_color" placeholder="#57F287" />
+          </div>
+        </div>
+
+        <hr class="divider" />
+
+        <h3>📩 Join DM (member ke private DM mein)</h3>
+        <div class="row">
+          <div class="row-text"><b>DM ON</b><span class="muted">Join hote hi member ko DM chala jayega</span></div>
+          <label class="switch"><input type="checkbox" name="dm_enabled" /><span class="slider"></span></label>
+        </div>
+        <div class="field">
+          <label>DM message</label>
+          <textarea name="dm_message" rows="3" data-emoji></textarea>
+          <span class="hint">Wohi variables chalte hain. Discord URL invite waghera daal sakte hain.</span>
+        </div>
+
+        <hr class="divider" />
+
+        <h3>🚪 Leave message</h3>
+        <div class="row">
+          <div class="row-text"><b>Leave ON</b><span class="muted">Member chale jaye to message</span></div>
+          <label class="switch"><input type="checkbox" name="leave_enabled" /><span class="slider"></span></label>
+        </div>
+        <div class="field">
+          <label>Leave channel</label>
+          <select name="leave_channel_id" data-populate="channels"></select>
+        </div>
+        <div class="field">
+          <label>Leave message</label>
+          <textarea name="leave_message" rows="2" data-emoji></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-primary" data-save="welcome">💾 Save Welcome</button>
+          <button type="button" class="btn" data-send="welcome-test">📨 Welcome Test</button>
+          <button type="button" class="btn" data-send="leave-test">🚪 Leave Test</button>
+          <span class="hint">Test message turant usi channel par chala jayega.</span>
+        </div>
+      </form>
+
+      <div class="card">
+        <h3>Live Preview</h3>
+        <div class="pv-block">
+          <div class="pv-caption">👋 Welcome channel message</div>
+          <div class="chat-bg" id="pv-welcome"></div>
+        </div>
+        <div class="pv-block">
+          <div class="pv-caption">📩 Join DM</div>
+          <div class="chat-bg pv-dm" id="pv-dm"></div>
+        </div>
+        <div class="pv-block">
+          <div class="pv-caption">🚪 Leave message</div>
+          <div class="chat-bg" id="pv-leave"></div>
+        </div>
+        <p class="muted pv-note" id="pv-welcome-note"></p>
+      </div>
+      </div>
+    </section>
+
+    <!-- ---------- VERIFICATION ---------- -->
+    <section class="tab hidden" id="tab-verification">
+      <div class="page-head"><h1>Verification</h1></div>
+
+      <div class="embed-layout">
+      <form class="card" data-section="verification">
+        <div class="row">
+          <div class="row-text"><b>Verification ON</b><span class="muted">Button dabao -&gt; role mil jaye</span></div>
+          <label class="switch"><input type="checkbox" name="enabled" /><span class="slider"></span></label>
+        </div>
+        <div class="field">
+          <label>Panel channel</label>
+          <select name="channel_id" data-populate="channels"></select>
+        </div>
+        <div class="field">
+          <label>Verify role</label>
+          <select name="role_id" data-populate="roles"></select>
+          <span class="hint">Bot ki role is role se neeche honi chahiye warna role nahi lagega.</span>
+        </div>
+        <div class="field">
+          <label>Panel message</label>
+          <textarea name="message" rows="3" data-emoji></textarea>
+        </div>
+        <div class="field">
+          <label>Embed color <span class="muted">(bich wali line ka rang)</span></label>
+          <div class="color-row">
+            <input type="color" class="color-swatch" data-swatch="embed_color" value="#5865f2" />
+            <input name="embed_color" placeholder="#5865F2" />
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-primary" data-save="verification">💾 Save Verification</button>
+          <button type="button" class="btn" data-send="verify-panel">🛡️ Send Verify Panel</button>
+          <span class="hint">Panel Discord se bhejein: <code>/verify panel</code></span>
+        </div>
+      </form>
+
+      <div class="card">
+        <h3>Live Preview</h3>
+        <div class="pv-block">
+          <div class="pv-caption">🛡️ Panel message <span class="pv-ctx" id="pv-verify-ctx"></span></div>
+          <div class="chat-bg" id="pv-verification"></div>
+        </div>
+        <p class="muted pv-note" id="pv-verification-note"></p>
+      </div>
+      </div>
+    </section>
+
+    <!-- ---------- TICKETS ---------- -->
+    <section class="tab hidden" id="tab-tickets">
+      <div class="page-head"><h1>Tickets</h1></div>
+
+      <div class="embed-layout">
+      <form class="card" data-section="tickets">
+        <div class="row">
+          <div class="row-text"><b>Tickets ON</b><span class="muted">Panel button se ticket ban sakein</span></div>
+          <label class="switch"><input type="checkbox" name="enabled" /><span class="slider"></span></label>
+        </div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Panel channel</label>
+            <select name="panel_channel_id" data-populate="channels"></select>
+          </div>
+          <div class="field">
+            <label>Category (jahan tickets banein)</label>
+            <select name="category_id" data-populate="categories"></select>
+          </div>
+        </div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Support role</label>
+            <select name="support_role_id" data-populate="roles"></select>
+          </div>
+          <div class="field">
+            <label>Log channel (transcript + events)</label>
+            <select name="log_channel_id" data-populate="channels"></select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Panel message</label>
+          <textarea name="message" rows="3" data-emoji></textarea>
+        </div>
+        <div class="field">
+          <label>Embed color <span class="muted">(bich wali line ka rang)</span></label>
+          <div class="color-row">
+            <input type="color" class="color-swatch" data-swatch="embed_color" value="#5865f2" />
+            <input name="embed_color" placeholder="#5865F2" />
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-primary" data-save="tickets">💾 Save Tickets</button>
+          <button type="button" class="btn" data-send="ticket-panel">🎫 Send Ticket Panel</button>
+          <span class="hint">Panel Discord se bhejein: <code>/ticket panel</code></span>
+        </div>
+      </form>
+
+      <div class="card">
+        <h3>Live Preview</h3>
+        <div class="pv-block">
+          <div class="pv-caption">🎫 Panel message <span class="pv-ctx" id="pv-ticket-ctx"></span></div>
+          <div class="chat-bg" id="pv-tickets"></div>
+        </div>
+        <p class="muted pv-note" id="pv-tickets-note"></p>
+      </div>
+      </div>
+    </section>
+
+    <!-- ---------- ANTI-NUKE ---------- -->
+    <section class="tab hidden" id="tab-antinuke">
+      <div class="page-head"><h1>Anti-Nuke System</h1></div>
+
+      <div class="alert alert-warn">
+        <b>Kaise kaam karta hai:</b>
+        <b>⚡ Instant (1 second):</b> kisi ne bhi <b>bot add</b> kiya, member ko <b>ban/kick</b> kiya,
+        <b>channel/role</b> banaya-deleted, ya <b>kisi ko Administrator wali role de di</b>
+        (ya role edit karke admin bana liya) → attacker ko foran ban. Ismein <b>admin bhi nahi bachta</b>
+        aur <b>role kisi bhi ko mili ho - bot ya member</b> (sirf server owner, bot owner aur whitelist safe).
+        <br />
+        <b>📊 Threshold:</b> bot har 2 second mein audit log check karta hai - ek window ke andar limit se
+        zyada actions hone par alert + action. Trusted log ko whitelist mein daalein.
+      </div>
+
+      <form class="card" data-section="antinuke">
+        <div class="row">
+          <div class="row-text"><b>Anti-Nuke ON</b><span class="muted">Audit log monitoring</span></div>
+          <label class="switch"><input type="checkbox" name="enabled" /><span class="slider"></span></label>
+        </div>
+        <div class="row">
+          <div class="row-text">
+            <b>⚡ Instant ban (1 sec)</b>
+            <span class="muted">Bot add / ban / kick / channel ya role ban-ya-delete / kisi ko admin role dena → foran ban (admin samet)</span>
+          </div>
+          <label class="switch"><input type="checkbox" name="instant_ban" /><span class="slider"></span></label>
+        </div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Alert channel</label>
+            <select name="alert_channel_id" data-populate="channels"></select>
+          </div>
+          <div class="field">
+            <label>Threshold ke baad action</label>
+            <select name="action">
+              <option value="ban">🔨 Ban attacker</option>
+              <option value="kick">👢 Kick attacker</option>
+              <option value="none">⚠️ Sirf alert (koi action nahi)</option>
+            </select>
+          </div>
+        </div>
+
+        <hr class="divider" />
+        <h3>Limits (kitni baar hone par action)</h3>
+        <div class="field-grid three">
+          <div class="field">
+            <label>Window (seconds)</label>
+            <input type="number" name="window_seconds" min="10" max="3600" />
+          </div>
+          <div class="field">
+            <label>Max bans</label>
+            <input type="number" name="max_bans" min="1" max="100" />
+          </div>
+          <div class="field">
+            <label>Max kicks</label>
+            <input type="number" name="max_kicks" min="1" max="100" />
+          </div>
+          <div class="field">
+            <label>Max bot adds</label>
+            <input type="number" name="max_bots" min="1" max="100" />
+          </div>
+          <div class="field">
+            <label>Max channel creates/deletes</label>
+            <input type="number" name="max_channels" min="1" max="100" />
+          </div>
+          <div class="field">
+            <label>Max role creates/deletes</label>
+            <input type="number" name="max_roles" min="1" max="100" />
+          </div>
+        </div>
+
+        <hr class="divider" />
+        <h3>Safety <span class="muted">(sirf threshold action ke liye)</span></h3>
+        <p class="hint">⚠️ <b>⚡ Instant ban</b> par ye dono switches dhyan mein nahi aate - nuker admin ya bot
+          ho, 1 second mein ban ho jayega. Sirf whitelist, server owner aur bot owner safe rehte hain.</p>
+        <div class="row">
+          <div class="row-text"><b>Admins ko chhod dein</b><span class="muted">ON = admin par action nahi (safe). OFF = compromised admin bhi pakda jayega.</span></div>
+          <label class="switch"><input type="checkbox" name="ignore_admins" /><span class="slider"></span></label>
+        </div>
+        <div class="row">
+          <div class="row-text"><b>Doosre bots ko chhod dein</b><span class="muted">Mod bots ke auto-actions par trigger nahi hoga</span></div>
+          <label class="switch"><input type="checkbox" name="ignore_bots" /><span class="slider"></span></label>
+        </div>
+        <div class="field">
+          <label>Whitelist (trusted user IDs)</label>
+          <textarea name="whitelist" rows="3" placeholder="1234567890&#10;9876543210"></textarea>
+          <span class="hint">Har line par ek User ID. In par kabhi action nahi liya jayega. Server owner aur bot owner hamesha safe hote hain.</span>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-primary" data-save="antinuke">💾 Save Anti-Nuke</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ---------- EMBED BUILDER ---------- -->
+    <section class="tab hidden" id="tab-embeds">
+      <div class="page-head"><h1>Embed Builder</h1></div>
+
+      <div class="embed-layout">
+        <div class="card">
+          <div class="field">
+            <label>Title</label>
+            <input id="emb-title" maxlength="256" placeholder="Embed ka title" data-emoji />
+          </div>
+          <div class="field">
+            <label>Description</label>
+            <textarea id="emb-desc" rows="5" placeholder="Main content..." data-emoji></textarea>
+          </div>
+          <div class="field-grid">
+            <div class="field">
+              <label>Color</label>
+              <input type="color" id="emb-color" value="#5865f2" />
+            </div>
+            <div class="field">
+              <label>Channel</label>
+              <select id="emb-channel" data-populate="channels" data-placeholder="off"></select>
+            </div>
+          </div>
+          <div class="field-grid">
+            <div class="field">
+              <label>Image URL (optional)</label>
+              <input id="emb-image" placeholder="https://i.imgur.com/xxxx.png" />
+            </div>
+            <div class="field">
+              <label>Thumbnail URL (optional)</label>
+              <input id="emb-thumb" placeholder="https://i.imgur.com/thumb.png" />
+              <span class="hint">Embed ke top-right par chhota square (Discord style).</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Footer (optional)</label>
+            <input id="emb-footer" maxlength="2048" placeholder="Footer text" data-emoji />
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-primary" id="emb-send">📨 Send to Discord</button>
+            <span class="hint">Bot ka channel par <b>Send Messages</b> permission hona chahiye.</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Live Preview</h3>
+          <div class="chat-bg">
+            <div class="chat-row">
+              <img class="avatar" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="" />
+              <div class="chat-content">
+                <div class="chat-name">NovaBot <span class="bot-tag">APP</span></div>
+                <div class="discord-embed" id="de-embed">
+                  <div class="de-bar" id="de-bar"></div>
+                  <div class="de-body">
+                    <div class="de-title" id="de-title" hidden></div>
+                    <div class="de-desc" id="de-desc" hidden></div>
+                    <img class="de-image" id="de-image" alt="" hidden />
+                    <div class="de-footer" id="de-footer" hidden></div>
+                  </div>
+                  <img class="de-thumb" id="de-thumb" alt="" hidden />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.GUILD_ID = {{ guild.id|tojson }};
+  window.GUILD_NAME = {{ guild.name|tojson }};
+  window.SETTINGS = {{ cfg|tojson }};
+  window.CHANNELS = {{ channels|tojson }};
+  window.CATEGORIES = {{ categories|tojson }};
+  window.ROLES = {{ roles|tojson }};
+  /* Server ke custom emojis - picker + preview dono isise chalte hain */
+  window.EMOJIS = {{ (emojis or [])|tojson }};
+  window.CSRF = {{ (csrf_token or "")|tojson }};
+  if (window.initDashboard) window.initDashboard();
+  else window.addEventListener("DOMContentLoaded", function () { window.initDashboard && window.initDashboard(); });
+</script>
+{% endblock %}

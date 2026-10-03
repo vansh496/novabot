@@ -1,0 +1,46 @@
+{
+  "1554407195037401200": {
+    "verification": {
+      "enabled": true,
+      "channel_id": 1554407677675839598,
+      "role_id": 1554505011608948747,
+      "message": "Click the button below to verify yourself and get access to the server.",
+      "embed_color": "#5865F2"
+    },
+    "tickets": {
+      "enabled": true,
+      "panel_channel_id": 1554407644192571392,
+      "category_id": 1554407460406562937,
+      "support_role_id": 1554408048720740422,
+      "log_channel_id": 1554407793103212614,
+      "message": "Need help? Click the button below to open a private ticket with the staff.",
+      "embed_color": "#5865F2"
+    },
+    "antinuke": {
+      "enabled": true,
+      "alert_channel_id": 1554407701688352850,
+      "action": "ban",
+      "instant_ban": true,
+      "window_seconds": 1,
+      "max_bans": 1,
+      "max_kicks": 1,
+      "max_channels": 1,
+      "max_roles": 1,
+      "ignore_admins": false,
+      "ignore_bots": false,
+      "whitelist": []
+    },
+    "welcome": {
+      "enabled": true,
+      "channel_id": 1554505012762251408,
+      "message": "Welcome {user} to **{server}**! You are member #{member_count}.",
+      "use_embed": true,
+      "embed_color": "#57F287",
+      "dm_enabled": false,
+      "dm_message": "Welcome to **{server}**, {username}! Please read the rules and enjoy your stay.",
+      "leave_enabled": true,
+      "leave_channel_id": 1554505012762251408,
+      "leave_message": "{username} left **{server}**. Member count: {member_count}"
+    }
+  }
+}
