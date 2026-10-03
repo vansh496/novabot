@@ -15,14 +15,16 @@ from __future__ import annotations
 
 import re
 
-# Pehla alternative = pehle se sahi syntax (`<a:naam:id>`) - use chhodna hai,
-# warna wo andar se dobara resolve hokar toot jayega. Group (1) sirf tab bhartha
-# hai jab doosra (shortcode) wala branch match ho.
-#
-# Doosre branch ke dono taraf `<` / `>` optional hain - log `<:fire:>`, `:fire:`
-# aur `:fire~2:` teeno tarah likh dete hain, teeno ko hi asli code bana dena hai.
+# Do hisse hain:
+#   1) `<a:naam:id>` / `<:naam:id>` - pehle se laga hua code. Isse hum ID dekhkar
+#      theek kar dete hain (galti se animated emoji par static `<:...>` likha ho).
+#   2) `:naam:`, `:naam~2:`, `:naam~2`, `<:naam:>`, `:naam>` - shortcodes jo log
+#      bahar se chipkate hain. Dono taraf ka `<` / `>` aur band colon dono
+#      optional hain kyunki log `:fire`, `:fire>` aur `:fire~2` teeno tarah
+#      likh dete hain.
 PATTERN = re.compile(
-    r"<a?:[A-Za-z0-9_]{1,32}:\d{6,}>|<?:([A-Za-z0-9_]{1,32})(?:~\d{1,4})?:>?"
+    r"<a?:(?P<ename>[A-Za-z0-9_]{1,32}):(?P<eid>\d+)>"
+    r"|<?:(?P<name>[A-Za-z0-9_]{1,32})(?:~\d{1,4})?:?>?"
 )
 
 
@@ -56,16 +58,27 @@ def resolve(text, emojis) -> str:
     table = _lookup(emojis)
     if not table:
         return src
+    by_id = {v[0]: (v[1], v[2]) for v in table.values()}  # id -> (animated, naam)
 
     def repl(match: re.Match) -> str:
-        name = match.group(1)
-        if not name:  # pehle se sahi syntax - jaisa hai waisa rehne do
+        eid = match.group("eid")
+        if eid:
+            # Laga hua code: ID hamari hai to animated/static theek kar do,
+            # nahi to (kisi aur server ka emoji) haath mat lagao.
+            hit = by_id.get(eid)
+            if not hit:
+                return match.group(0)
+            animated, canonical = hit
+            return ("<a:" if animated else "<:") + canonical + ":" + eid + ">"
+
+        name = match.group("name")
+        if not name:
             return match.group(0)
-        hit = table.get(name.lower())
-        if not hit:
+        item = table.get(name.lower())
+        if not item:
             return match.group(0)  # server mein aisa emoji hai hi nahi
-        eid, animated, canonical = hit
-        return ("<a:" if animated else "<:") + canonical + ":" + eid + ">"
+        item_id, animated, canonical = item
+        return ("<a:" if animated else "<:") + canonical + ":" + item_id + ">"
 
     return PATTERN.sub(repl, src)
 

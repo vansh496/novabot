@@ -217,6 +217,12 @@ def test_bot_cogs() -> None:
             text == "Doosra format <a:fire:1555913518652334240> aur <a:fire:1555913518652334240>",
             text,
         )
+        text = _format("Adhoora :fire aur static code <:fire:1555913518652334240>", _M(), _G())
+        check(
+            "band colon/dash wala aur static code bhi theek hota hai",
+            text == "Adhoora <a:fire:1555913518652334240> aur static code <a:fire:1555913518652334240>",
+            text,
+        )
 
         from cogs.antinuke import CATEGORY_BY_ACTION
         from discord import AuditLogAction

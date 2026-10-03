@@ -294,12 +294,23 @@
     });
     if (!Object.keys(map).length) return src;
 
-    // Pehla alternative = pehle se sahi syntax (`<a:naam:id>`) - use chhodna
-    // hai, warna wo andar se dobara resolve hokar toot jayega. Group tabhi
-    // bharta hai jab doosra (shortcode) wala branch match ho.
+    var byId = {};
+    Object.keys(map).forEach(function (k) {
+      byId[String(map[k].id)] = map[k];
+    });
+
+    // 1) `<a:naam:id>` / `<:naam:id>` = pehle se laga hua code. ID hamari hai to
+    //    animated/static theek kar dete hain (galti se `<:...>` likha ho to),
+    //    warna haath nahi lagate. 2) `:naam:`, `:naam~2`, `<:naam:>`, `:naam>`
+    //    = shortcodes - `<`, `>` aur band colon teeno optional hain.
     return src.replace(
-      /<a?:[a-zA-Z0-9_]{1,32}:\d{6,}>|<?:([a-zA-Z0-9_]{1,32})(?:~\d{1,4})?:>?/g,
-      function (m, name) {
+      /<a?:([a-zA-Z0-9_]{1,32}):(\d+)>|<?:([a-zA-Z0-9_]{1,32})(?:~\d{1,4})?:?>?/g,
+      function (m, _ename, eid, name) {
+        if (eid) {
+          var byid = byId[eid];
+          if (!byid) return m; // kisi aur server ka emoji - jaisa hai waisa
+          return (byid.animated ? "<a:" : "<:") + byid.name + ":" + eid + ">";
+        }
         if (!name) return m;
         var e = map[name.toLowerCase()];
         if (!e) return m; // jaan-pehchan ka emoji nahi - jaisa hai waisa chhod do
