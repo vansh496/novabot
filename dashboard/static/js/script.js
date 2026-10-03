@@ -298,7 +298,7 @@
     // hai, warna wo andar se dobara resolve hokar toot jayega. Group tabhi
     // bharta hai jab doosra (shortcode) wala branch match ho.
     return src.replace(
-      /<a?:[a-zA-Z0-9_]{1,32}:\d{6,}>|:([a-zA-Z0-9_]{1,32})(?:~\d{1,4})?:?/g,
+      /<a?:[a-zA-Z0-9_]{1,32}:\d{6,}>|<?:([a-zA-Z0-9_]{1,32})(?:~\d{1,4})?:>?/g,
       function (m, name) {
         if (!name) return m;
         var e = map[name.toLowerCase()];

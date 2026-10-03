@@ -211,6 +211,12 @@ def test_bot_cogs() -> None:
             text == "Naya update <a:fire:1555913518652334240> 5:30 baje",
             text,
         )
+        text = _format("Doosra format <:fire:> aur <a:fire:1555913518652334240>", _M(), _G())
+        check(
+            "gol-gol bracket wala shortcode bhi sahi banta hai",
+            text == "Doosra format <a:fire:1555913518652334240> aur <a:fire:1555913518652334240>",
+            text,
+        )
 
         from cogs.antinuke import CATEGORY_BY_ACTION
         from discord import AuditLogAction

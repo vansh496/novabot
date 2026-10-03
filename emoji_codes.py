@@ -18,8 +18,11 @@ import re
 # Pehla alternative = pehle se sahi syntax (`<a:naam:id>`) - use chhodna hai,
 # warna wo andar se dobara resolve hokar toot jayega. Group (1) sirf tab bhartha
 # hai jab doosra (shortcode) wala branch match ho.
+#
+# Doosre branch ke dono taraf `<` / `>` optional hain - log `<:fire:>`, `:fire:`
+# aur `:fire~2:` teeno tarah likh dete hain, teeno ko hi asli code bana dena hai.
 PATTERN = re.compile(
-    r"<a?:[A-Za-z0-9_]{1,32}:\d{6,}>|:([A-Za-z0-9_]{1,32})(?:~\d{1,4})?:?"
+    r"<a?:[A-Za-z0-9_]{1,32}:\d{6,}>|<?:([A-Za-z0-9_]{1,32})(?:~\d{1,4})?:>?"
 )
 
 
