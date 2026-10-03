@@ -81,6 +81,10 @@ def _log_network() -> None:
         ("gateway bot-UA", "https://discord.com/api/v10/gateway", bot_ua),
         ("gateway browser-UA", "https://discord.com/api/v10/gateway", browser_ua),
         ("oauth2/token GET", "https://discord.com/api/oauth2/token", browser_ua),
+        # Kahi block sirf discord.com zone par hi to nahi? Agar ye 200 dein
+        # to matlab IP block "discord.com" tak simit hai, poori IP par nahi.
+        ("canary gateway", "https://canary.discord.com/api/v10/gateway", browser_ua),
+        ("ptb gateway", "https://ptb.discord.com/api/v10/gateway", browser_ua),
     )
     for name, url, ua in checks:
         try:
