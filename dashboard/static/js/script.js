@@ -86,7 +86,9 @@
       // chali jaati hai aur last digits chup-chaap badal jaate hain.
       // Isliye ID hamesha string ki tarah bhejo (settings.py int mein coerce kar leta hai).
       else if (key.slice(-3) === "_id") out[key] = String(el.value || "0").trim() || "0";
-      else out[key] = el.value;
+      // Welcome/verify/ticket text mein `:naam:` chipka ho to save karte waqt
+      // hi asli emoji syntax bana do, warna bot bhejega to Discord text dikha dega
+      else out[key] = resolveEmojiCodes(el.value);
     });
     return out;
   }
@@ -212,7 +214,7 @@
     if (!t || !d) return;
 
     // title/footer = emoji + simple text, description = markdown + emoji (Discord jaisa)
-    t.innerHTML = emojiHtml(escapeHtml(title));
+    t.innerHTML = emojiHtml(title);
     t.hidden = !title;
     d.innerHTML = mdToHtml(desc);
     d.hidden = !desc;
@@ -223,7 +225,7 @@
       if (thumb) { th.src = thumb; th.hidden = false; } else { th.hidden = true; th.removeAttribute("src"); }
     }
     if (embedBox) embedBox.classList.toggle("has-thumb", !!thumb);
-    if (f) { f.innerHTML = emojiHtml(escapeHtml(footer)); f.hidden = !footer; }
+    if (f) { f.innerHTML = emojiHtml(footer); f.hidden = !footer; }
     if (bar) bar.style.background = color;
   }
 
@@ -232,12 +234,13 @@
     if (!channel || channel === "0") { toast("❌ Pehle channel select karein"); return; }
 
     var embed = {};
-    var title = val("emb-title");
-    var desc = val("emb-desc");
+    // Panel wale shortcodes (`:emoji_2~6:`) ko bhejne se pehle asli syntax mein badal do
+    var title = resolveEmojiCodes(val("emb-title"));
+    var desc = resolveEmojiCodes(val("emb-desc"));
     var color = val("emb-color");
     var image = val("emb-image");
     var thumb = val("emb-thumb");
-    var footer = val("emb-footer");
+    var footer = resolveEmojiCodes(val("emb-footer"));
 
     if (title) embed.title = title;
     if (desc) embed.description = desc;
@@ -274,11 +277,43 @@
       .replace(/"/g, "&quot;");
   }
 
+  /* Chhota shortcode jaise `:naam:`, `:naam~2:` ya `:naam~2` -> asli Discord
+     syntax (`<a:naam:id>` / `<:naam:id>`).
+
+     Aise format kahin aur se copy karke yahan chipka diye jaate hain, aur
+     Discord unhe plain text hi samajhta hai - isliye preview aur bhejne dono
+     se pehle hum khud badal dete hain. Sirf tabhi badalta hai jab naam kisi
+     asli emoji se match kare (warna "1:30" jaise normal text ko chhodega). */
+  function resolveEmojiCodes(text) {
+    var src = String(text == null ? "" : text);
+    if (!src) return src;
+
+    var map = {};
+    emojiList().forEach(function (e) {
+      if (e && e.name && e.id) map[String(e.name).toLowerCase()] = e;
+    });
+    if (!Object.keys(map).length) return src;
+
+    // Pehla alternative = pehle se sahi syntax (`<a:naam:id>`) - use chhodna
+    // hai, warna wo andar se dobara resolve hokar toot jayega. Group tabhi
+    // bharta hai jab doosra (shortcode) wala branch match ho.
+    return src.replace(
+      /<a?:[a-zA-Z0-9_]{1,32}:\d{6,}>|:([a-zA-Z0-9_]{1,32})(?:~\d{1,4})?:?/g,
+      function (m, name) {
+        if (!name) return m;
+        var e = map[name.toLowerCase()];
+        if (!e) return m; // jaan-pehchan ka emoji nahi - jaisa hai waisa chhod do
+        return (e.animated ? "<a:" : "<:") + e.name + ":" + e.id + ">";
+      }
+    );
+  }
+
   /* Discord ka custom emoji syntax -> asli emoji image.
      `<a:naam:id>` = animated (gif), `<:naam:id>` = static (png).
-     Yeh HTML-escape ke BAAD lagta hai, isliye regex `&lt; ... &gt;` dekhta hai. */
+     Input RAW text leta hai: pehle shortcodes resolve, phir escape, phir img. */
   function emojiHtml(text) {
-    return String(text == null ? "" : text).replace(
+    var escaped = escapeHtml(resolveEmojiCodes(text));
+    return escaped.replace(
       /&lt;(a?):([a-zA-Z0-9_]{1,32}):(\d{6,})&gt;/g,
       function (m, anim, name, id) {
         var ext = anim === "a" ? "gif" : "png";
@@ -306,7 +341,7 @@
   /* Discord jaisa thoda sa markdown: `code`, **bold**, __underline__, *italic*
      (emoji pehle badal dete hain taaki markdown unhe na todo) */
   function mdToHtml(text) {
-    var out = emojiHtml(escapeHtml(text));
+    var out = emojiHtml(text);
     out = out.replace(/`([^`\n]+)`/g, "<code>$1</code>");
     out = out.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>");
     out = out.replace(/__([^_\n]+)__/g, "<u>$1</u>");
@@ -397,9 +432,9 @@
       var wrap = el("div", "discord-embed");
       wrap.appendChild(el("div", "de-bar")).style.background = opts.embed.color || "#5865f2";
       var body = el("div", "de-body");
-      if (opts.embed.title) body.appendChild(htmlNode("de-title", emojiHtml(escapeHtml(opts.embed.title))));
+      if (opts.embed.title) body.appendChild(htmlNode("de-title", emojiHtml(opts.embed.title)));
       if (opts.embed.desc) body.appendChild(nodeWithMd(opts.embed.desc));
-      if (opts.embed.footer) body.appendChild(htmlNode("de-footer", emojiHtml(escapeHtml(opts.embed.footer))));
+      if (opts.embed.footer) body.appendChild(htmlNode("de-footer", emojiHtml(opts.embed.footer)));
       wrap.appendChild(body);
       content.appendChild(wrap);
     }
