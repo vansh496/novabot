@@ -41,9 +41,11 @@ def _is_rate_limit(text: str) -> bool:
 def _log_network() -> None:
     """Boot par server ka outbound IP aur Discord ki pahunch log karein.
 
-    Cloudflare ka Error 1015 / 429 sirf IP par lagta hai - is ek line se
-    pata chalta hai kaun sa IP block hai, aur naye instance par naya IP
-    mila ya nahi (ya block apne aap hat gaya).
+    Cloudflare ka Error 1015 / 429 sirf IP par lagta hai - is diagnostic se
+    pata chalta hai:
+      * kaun sa IP hai (do alag IP service se - ek rate-limit kare to doosri bataye)
+      * block IP-specific hai ya User-Agent / path-specific
+      * naye instance par naya IP mila ya nahi
     """
     try:
         import requests
@@ -51,27 +53,46 @@ def _log_network() -> None:
         print(f"[net] requests nahi mila: {exc}", flush=True)
         return
 
-    try:
-        ip = requests.get("https://api.ipify.org", timeout=6).text.strip()
-    except Exception as exc:  # noqa: BLE001
-        ip = f"pata nahi ({type(exc).__name__})"
-    print(f"[net] outbound IP: {ip}", flush=True)
+    def _ip_from_trace(text: str) -> str:
+        for line in text.splitlines():
+            if line.startswith("ip="):
+                return line.split("=", 1)[1]
+        return "?"
 
-    checks = (
-        ("gateway", "https://discord.com/api/v10/gateway"),
-        ("oauth2/token (GET)", "https://discord.com/api/oauth2/token"),
+    ip_sources = (
+        ("ipify", "https://api.ipify.org", lambda t: t.strip()[:60]),
+        ("cloudflare-trace", "https://www.cloudflare.com/cdn-cgi/trace", _ip_from_trace),
     )
-    for name, url in checks:
+    for name, url, parse in ip_sources:
         try:
-            resp = requests.get(url, timeout=10)
+            resp = requests.get(url, timeout=6)
+            print(f"[net] {name}: HTTP {resp.status_code} -> {parse(resp.text)}", flush=True)
+        except Exception as exc:  # noqa: BLE001
+            print(f"[net] {name}: {type(exc).__name__}", flush=True)
+
+    browser_ua = (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+    )
+    bot_ua = "DiscordBot (https://github.com/Rapptz/discord.py, 2.7.1) Python/3.13"
+    checks = (
+        ("discord.com home", "https://discord.com/", None),
+        ("gateway default-UA", "https://discord.com/api/v10/gateway", None),
+        ("gateway bot-UA", "https://discord.com/api/v10/gateway", bot_ua),
+        ("gateway browser-UA", "https://discord.com/api/v10/gateway", browser_ua),
+        ("oauth2/token GET", "https://discord.com/api/oauth2/token", browser_ua),
+    )
+    for name, url, ua in checks:
+        try:
+            resp = requests.get(url, timeout=10, headers={"User-Agent": ua} if ua else {})
             status = resp.status_code
-            # 403/429 = Cloudflare ne rok diya; 4xx/5xx bhi = kam se kam
-            # Discord tak pahunche (block nahi). Sirf 403/429 = blocked.
+            # 403/429 = Cloudflare ne rok diya; koi bhi doosra code = kam se kam
+            # request destination tak pahunchi (block nahi).
             state = "BLOCKED" if status in (403, 429) else "pahunch gaye"
             body = (resp.text or "").replace("\n", " ")[:70]
-            print(f"[net] discord {name}: HTTP {status} [{state}] {body}", flush=True)
+            print(f"[net] {name}: HTTP {status} [{state}] {body}", flush=True)
         except Exception as exc:  # noqa: BLE001
-            print(f"[net] discord {name}: error {type(exc).__name__}", flush=True)
+            print(f"[net] {name}: error {type(exc).__name__}", flush=True)
 
 
 def _sleep(seconds: int, dash: subprocess.Popen) -> bool:
@@ -134,8 +155,10 @@ def main() -> int:
                 rate_limited = _is_rate_limit(detail)
                 print(f"[start] bot crash -> {detail[:400]}", flush=True)
 
-            # Cloudflare wale rate-limit ko theek hone mein minute lagte hain.
-            delay = 240 if rate_limited else min(30 * attempt, 120)
+            # Cloudflare wale rate-limit ko theek hone mein minute lagte hain
+            # aur har chhoti koshish block ko barabar badha bhi sakti hai -
+            # isliye rate-limit par kaafi lamba gap rakhte hain.
+            delay = 900 if rate_limited else min(60 * attempt, 300)
             print(f"[start] {delay}s baad dobara koshish...", flush=True)
             if not _sleep(delay, dash):
                 print("[start] dashboard band - bot retry band", flush=True)
