@@ -236,14 +236,35 @@ def login():
     return redirect(AUTHORIZE_URL + "?" + urlencode(params))
 
 
+def _oauth_error(title: str, detail: str):
+    """OAuth fail hone par user ko samajh aane wala page + server log dono."""
+    print(f"[callback] {title} -> {detail}", flush=True)
+    return (
+        render_template(
+            "message.html",
+            title=title,
+            text=detail,
+        ),
+        400,
+    )
+
+
 @app.route("/callback")
 def callback():
-    state = session.pop("oauth_state", None)
-    if not state or request.args.get("state") != state:
-        abort(400)
+    saved_state = session.pop("oauth_state", None)
+    sent_state = request.args.get("state")
+    if not saved_state or sent_state != saved_state:
+        return _oauth_error(
+            "Login fail: state mismatch",
+            "Session cookie wapas nahi mili (browser ne cookie block ki "
+            "ya session expire ho gaya). Dobara Login with Discord dabayein. "
+            f"[cookie={'haan' if 'session' in request.cookies else 'nahi'} "
+            f"saved={'haan' if saved_state else 'nahi'} "
+            f"sent={'haan' if sent_state else 'nahi'}]",
+        )
     code = request.args.get("code")
     if not code:
-        abort(400)
+        return _oauth_error("Login fail: code nahi mila", "Discord ne code nahi bheja.")
 
     data = {
         "client_id": CLIENT_ID,
@@ -252,21 +273,43 @@ def callback():
         "code": code,
         "redirect_uri": REDIRECT_URI,
     }
-    try:
-        resp = requests.post(
-            TOKEN_URL,
-            data=data,
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
-            timeout=15,
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    resp = None
+    # 429/5xx aane par 2 baar dobara koshish (Discord kabhi kabhi throttle karta hai)
+    for attempt in (1, 2):
+        try:
+            resp = requests.post(TOKEN_URL, data=data, headers=headers, timeout=15)
+        except requests.RequestException as exc:
+            if attempt == 2:
+                return _oauth_error(
+                    "Login fail: Discord tak nahi pahunche",
+                    f"Network error: {type(exc).__name__}",
+                )
+            time.sleep(2)
+            continue
+        if resp.status_code in (429, 500, 502, 503, 504) and attempt == 1:
+            print(f"[callback] token exchange {resp.status_code} - 2s baad retry", flush=True)
+            time.sleep(2)
+            continue
+        break
+
+    if resp is None or resp.status_code != 200:
+        body = (resp.text[:300] if resp is not None else "no response")
+        status = resp.status_code if resp is not None else "none"
+        return _oauth_error(
+            "Login fail: token exchange",
+            f"Discord ne token nahi diya (HTTP {status}). "
+            f"Agar isme 429/1015/rate limit dikhe to Discord ke "
+            f"Render ke IP par rate-limit ke karan hai - thodi der baad "
+            f"dobara koshish karein. Detail: {body}",
         )
-    except requests.RequestException:
-        abort(500)
-    if resp.status_code != 200:
-        abort(400)
 
     token = resp.json().get("access_token")
     if not token:
-        abort(400)
+        return _oauth_error(
+            "Login fail: access_token nahi mila",
+            f"Response: {resp.text[:300]}",
+        )
     session["token"] = token
 
     me = _api_get("/users/@me", _user_headers())
